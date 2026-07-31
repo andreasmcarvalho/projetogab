@@ -1301,7 +1301,7 @@ function Fireflies({ count = 7 }) {
    CÉU FINAL — depois de tudo
    céu enorme, lua crescendo, música baixinha, frases que somem, silêncio
    ============================================================ */
-function NightSky() {
+function NightSky({ onEnter }) {
   const ref = useRef(null);
   const audioRef = useRef(null);
   const inView = useRef(false);
@@ -1312,6 +1312,7 @@ function NightSky() {
   const [line2, setLine2] = useState(false);
   const [line3, setLine3] = useState(false);
   const [thanks, setThanks] = useState(false);
+  const [signName, setSignName] = useState(false);
 
   const stars = useMemo(() => {
     const rand = seededRandom(70707);
@@ -1327,6 +1328,23 @@ function NightSky() {
     }));
   }, []);
 
+  const fadeAudio = useCallback((audio, to, ms) => {
+    if (!audio) return;
+    const steps = 20;
+    const from = audio.volume;
+    const stepTime = ms / steps;
+    let i = 0;
+    const iv = setInterval(() => {
+      i += 1;
+      const v = from + (to - from) * (i / steps);
+      audio.volume = Math.min(1, Math.max(0, v));
+      if (i >= steps) {
+        clearInterval(iv);
+        if (to === 0) audio.pause();
+      }
+    }, stepTime);
+  }, []);
+
   /* dispara a sequência quando o céu entra na visão */
   useEffect(() => {
     const el = ref.current;
@@ -1337,10 +1355,14 @@ function NightSky() {
           if (entry.isIntersecting && !inView.current) {
             inView.current = true;
             setEntered(true);
+            /* manda parar a playlist de cima */
+            if (onEnter) onEnter();
+            /* toca a música do fim com fade-in */
             if (audioRef.current) {
-              audioRef.current.volume = 0.25;
+              audioRef.current.volume = 0;
               const attempt = audioRef.current.play();
               if (attempt && typeof attempt.catch === 'function') attempt.catch(() => {});
+              fadeAudio(audioRef.current, 0.25, 1500);
             }
             /* sequência de tempos */
             setTimeout(() => setGrowMoon(true), 1200);
@@ -1353,17 +1375,21 @@ function NightSky() {
             setTimeout(() => setLine3(true), 13800);
             setTimeout(() => setLine3(false), 17800);
             /* obrigado: aparece e fica pra sempre */
-            setTimeout(() => setThanks(true), 14000);
+            setTimeout(() => setThanks(true), 18600);
+            setTimeout(() => setSignName(true), 20600);
+            
           } else if (!entry.isIntersecting && inView.current) {
-            if (audioRef.current) audioRef.current.pause();
+            inView.current = false;
+            /* fade-out ao sair */
+            if (audioRef.current) fadeAudio(audioRef.current, 0, 800);
           }
         });
       },
-      { threshold: 0.55 }
+      { threshold: 0.15, rootMargin: '0px 0px -10% 0px' }
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [onEnter, fadeAudio]);
 
   return (
     <section
@@ -1457,7 +1483,18 @@ function NightSky() {
               animate={{ opacity: 1 }}
               transition={{ duration: 3, ease: 'easeOut' }}
             >
-              com amor, Andreas.
+              COM AMOR,
+              <AnimatePresence>
+                {signName && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 3.5, ease: 'easeOut' }}
+                  >
+                    {' '}ANDREAS.
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </motion.p>
           )}
         </AnimatePresence>
@@ -1501,6 +1538,26 @@ function MainContent() {
     },
     [playing]
   );
+
+/* para a playlist de cima (usado quando chega no céu final) */
+  const stopPlaylist = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio && !audio.paused) {
+      /* fade-out rápido antes de pausar */
+      const from = audio.volume;
+      let i = 0;
+      const iv = setInterval(() => {
+        i += 1;
+        audio.volume = Math.max(0, from * (1 - i / 15));
+        if (i >= 15) {
+          clearInterval(iv);
+          audio.pause();
+          audio.volume = 1;
+          setPlaying(null);
+        }
+      }, 40);
+    }
+  }, []);
 
   const lightBonfire = useCallback(() => {
     setLitOnce(true);
@@ -1848,7 +1905,7 @@ function MainContent() {
       </section>
 
       {/* CÉU FINAL — o verdadeiro fim */}
-      <NightSky />
+      <NightSky onEnter={stopPlaylist} />
     </div>
   );
 }
