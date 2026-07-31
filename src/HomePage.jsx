@@ -1372,11 +1372,10 @@ function NightSky({ onEnter }) {
             /* frase 2: aparece, fica, some */
             setTimeout(() => setLine2(true), 9000);
             setTimeout(() => setLine2(false), 13000);
-            setTimeout(() => setLine3(true), 13800);
-            setTimeout(() => setLine3(false), 17800);
+            setTimeout(() => setLine3(true), 14800);
             /* obrigado: aparece e fica pra sempre */
-            setTimeout(() => setThanks(true), 18600);
-            setTimeout(() => setSignName(true), 20600);
+            setTimeout(() => setThanks(true), 19600);
+            setTimeout(() => setSignName(true), 21600);
             
           } else if (!entry.isIntersecting && inView.current) {
             inView.current = false;
@@ -1478,7 +1477,7 @@ function NightSky({ onEnter }) {
           {thanks && (
             <motion.p
               key="thanks"
-              className="font-pixel mt-16 text-[9px] lowercase tracking-[0.3em] text-white/40"
+              className="font-pixel mt-16 text-[9px] uppercase tracking-[0.3em] text-white/40"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 3, ease: 'easeOut' }}
